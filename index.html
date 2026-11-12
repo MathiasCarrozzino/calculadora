@@ -68,6 +68,7 @@ body[data-mode="L"] [data-m="3"],body[data-mode="3"] [data-m="L"]{display:none}
 .bi{margin:10px 0}.bi .l{display:flex;justify-content:space-between;gap:8px}.bi .l b{font-variant-numeric:tabular-nums}.bi .br{height:8px;border-radius:4px;background:var(--bg);margin-top:4px;overflow:hidden}.bi .br i{display:block;height:100%;background:var(--ac);border-radius:4px}
 .tb{border-collapse:collapse;font-size:.85rem;white-space:nowrap}.tb th,.tb td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--ln);font-variant-numeric:tabular-nums}.tb th:first-child,.tb td:first-child{text-align:left}.tb th{color:var(--mu);font-weight:600}.tb tr:last-child td{font-weight:700}
 .it.ok{border-left-color:#16a34a}
+.bkb{background:var(--sf);border:1px solid var(--ac);border-left-width:5px;border-radius:14px;padding:12px 14px;margin-bottom:14px}.bkb .acts{margin-top:8px}
 #lock{position:fixed;inset:0;z-index:99;background:var(--bg);display:grid;place-items:center;text-align:center;padding:24px}.lkb{max-width:320px}.lkb .ic{width:54px;height:54px;color:var(--ac)}
 @media print{.seg,.acts,.bar,.row button,.add,.hero .btn{display:none!important}body{padding:0}}
 </style>
@@ -82,6 +83,7 @@ body[data-mode="L"] [data-m="3"],body[data-mode="3"] [data-m="L"]{display:none}
 <main>
 <header class="hero"><span class="hi"><svg class="ic" data-m="3"><use href="#i3"/></svg><svg class="ic" data-m="L"><use href="#iL"/></svg></span><div><h1>Calculadora de precios</h1><p data-m="3">Impresión 3D</p><p data-m="L">Corte y grabado láser diodo</p></div><span class="hb"><button class="btn" id="bl2">Presupuestos (0)</button><button class="btn" id="bst" aria-label="Estadísticas" title="Estadísticas"><svg class="ic"><use href="#ib"/></svg></button><button class="btn" id="bco" aria-label="Datos de la empresa" title="Datos de la empresa"><svg class="ic"><use href="#ig"/></svg></button></span></header>
 <div id="v1">
+<div class="bkb" id="bkb" hidden><span id="bkt"></span><div class="acts"><button class="btn p" id="bkgo">Hacer respaldo</button><button class="btn" id="bklt">Más tarde</button></div></div>
 <p class="lead">Calculá cuánto cobrar por un trabajo de impresión 3D o de corte y grabado láser diodo. Todos los valores se pueden editar y quedan guardados en este navegador.</p>
 <div class="seg" role="group" aria-label="Tipo de trabajo">
 <button id="b3" aria-pressed="true"><svg class="ic"><use href="#i3"/></svg>Impresión 3D</button>
@@ -247,7 +249,7 @@ function saveB(asNew){var b=snap(),i=-1;if(curId&&!asNew)LIST.forEach(function(x
 if(i>=0){b.id=curId;b.ts=LIST[i].ts;b.upd=Date.now();b.ok=LIST[i].ok;b.okts=LIST[i].okts;LIST[i]=b}else{b.id=Date.now().toString(36);LIST.unshift(b);curId=b.id}
 if(saveL()){resetJob();msg("Presupuesto guardado y campos reiniciados. Lo encontrás en el botón Presupuestos.")}}
 function openB(b){mode=b.mode;$("tpp").value="0";$("mpp").value="0";Object.keys(b.v).forEach(function(k){if($(k))$(k).value=b.v[k]});$("rows").innerHTML="";(b.rows||[]).forEach(function(r){addRow(r[0],r[1],r[2])});curId=b.id;view(1);syncTpp();setMode(b.mode);sync();msg("Presupuesto abierto: podés editarlo y actualizarlo.")}
-function view(k){[1,2,3,4,5].forEach(function(i){$("v"+i).hidden=k!==i});$("bar").hidden=k!==1;$("bl2").hidden=k!==1;$("bco").hidden=k!==1;$("bst").hidden=k!==1;if(k===2)renderList();window.scrollTo(0,0)}
+function view(k){[1,2,3,4,5].forEach(function(i){$("v"+i).hidden=k!==i});$("bar").hidden=k!==1;$("bl2").hidden=k!==1;$("bco").hidden=k!==1;$("bst").hidden=k!==1;if(k===2)renderList();if(k===1)bkCheck();window.scrollTo(0,0)}
 var CK="calc3dlaser.company",CO={n:"",l:"",w:0,h:0},RCUR="$",pv=1;
 try{var c0=JSON.parse(localStorage.getItem(CK)||"null");if(c0)CO=c0}catch(e){}
 function saveCo(){try{localStorage.setItem(CK,JSON.stringify(CO))}catch(e){msg("No se pudo guardar en este navegador.")}}
@@ -460,7 +462,13 @@ all.sort(function(x,y){return x.ts-y.ts}).forEach(function(b){r3.push([dt(b.ts),
 dl("reporte-"+sel+".xlsx",mkxlsx([{n:"Resumen por mes",rows:r1,w:[16,13,9,16,14,14,14,24,14,14,14,16]},{n:mlab(sel),rows:r2,w:[26,16,14]},{n:"Presupuestos",rows:r3,w:[12,12,16,28,22,8,18,8,16,14,14,14,24,14,14,14,14]}]),XM)}
 $("sm").onchange=renderStats;$("st").onchange=renderStats;$("sx").onclick=sExcel;$("bst").onclick=function(){renderStats();view(5)};$("back5").onclick=function(){view(1)};
 $("list").onchange=function(e){var t=e.target;if(!t.dataset||t.dataset.a!=="k")return;var b=LIST.filter(function(x){return x.id===t.dataset.i})[0];if(!b)return;b.ok=t.checked;if(t.checked)b.okts=Date.now();else delete b.okts;b.upd=Date.now();saveL();t.closest(".it").classList.toggle("ok",t.checked)};
-loadL();sync();syncTpp();setMode(mode);
+function bkCheck(){var t=0,sn=0;try{t=+localStorage.getItem("calc3dlaser.lastbk")||0;sn=+localStorage.getItem("calc3dlaser.bksnooze")||0}catch(e){}
+if(!LIST.length||Date.now()<sn){$("bkb").hidden=true;return}
+var ref=t||Math.min.apply(null,LIST.map(function(b){return b.ts})),d=Math.floor((Date.now()-ref)/864e5);
+if(d>=30){$("bkt").textContent=t?"Hace "+d+" días que no hacés un respaldo de tus datos.":"Tenés presupuestos guardados desde hace "+d+" días y nunca hiciste un respaldo.";$("bkb").hidden=false}else $("bkb").hidden=true}
+$("bkgo").onclick=function(){bkExport();$("bkb").hidden=true};
+$("bklt").onclick=function(){try{localStorage.setItem("calc3dlaser.bksnooze",String(Date.now()+7*864e5))}catch(e){}$("bkb").hidden=true};
+loadL();sync();bkCheck();syncTpp();setMode(mode);
 </script>
 <script>if("serviceWorker" in navigator&&/^https?:/.test(location.protocol))window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})</script>
 </body>
