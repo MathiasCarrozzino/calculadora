@@ -69,6 +69,7 @@ body[data-mode="L"] [data-m="3"],body[data-mode="3"] [data-m="L"]{display:none}
 .tb{border-collapse:collapse;font-size:.85rem;white-space:nowrap}.tb th,.tb td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--ln);font-variant-numeric:tabular-nums}.tb th:first-child,.tb td:first-child{text-align:left}.tb th{color:var(--mu);font-weight:600}.tb tr:last-child td{font-weight:700}
 .it.ok{border-left-color:#16a34a}
 .bkb{background:var(--sf);border:1px solid var(--ac);border-left-width:5px;border-radius:14px;padding:12px 14px;margin-bottom:14px}.bkb .acts{margin-top:8px}
+.bi:last-child{border-top:1px solid var(--ln);padding-top:8px}.bi:last-child .l{font-weight:700}
 #lock{position:fixed;inset:0;z-index:99;background:var(--bg);display:grid;place-items:center;text-align:center;padding:24px}.lkb{max-width:320px}.lkb .ic{width:54px;height:54px;color:var(--ac)}
 @media print{.seg,.acts,.bar,.row button,.add,.hero .btn{display:none!important}body{padding:0}}
 </style>
@@ -169,9 +170,12 @@ body[data-mode="L"] [data-m="3"],body[data-mode="3"] [data-m="L"]{display:none}
 <button class="btn" id="back5">Volver</button>
 <section style="margin-top:12px"><h2>Estadísticas</h2>
 <div class="g">
-<label>Mes<span class="in"><select id="sm"></select></span></label>
+<label id="sml">Mes<span class="in"><select id="sm"></select></span></label>
 <label>Tipo de trabajo<span class="in"><select id="st"><option value="">Todos</option><option value="3">Impresión 3D</option><option value="L">Láser diodo</option></select></span></label>
 </div>
+<div class="acts"><button class="btn" id="srb">Elegir fechas</button></div>
+<div class="g" id="srg" hidden style="margin-top:12px"><label>Desde<span class="in"><input type="date" id="sf"></span></label><label>Hasta<span class="in"><input type="date" id="su"></span></label></div>
+<p class="note" id="srn" hidden>Si completás una sola fecha, se toma ese día.</p>
 <p class="note" id="sn"></p>
 </section>
 <section><h2 id="sh">Totales</h2>
@@ -446,20 +450,29 @@ function sData(){var t=$("st").value,mo={};LIST.forEach(function(b){if(!b.ok||(t
 function renderStats(){var mo=sData(),keys=Object.keys(mo).sort(),now=mk(Date.now()),c=$("cur").value||"",op=keys.slice();if(op.indexOf(now)<0)op.push(now);op.sort().reverse();
 var sel=op.indexOf($("sm").value)>=0?$("sm").value:(keys.indexOf(now)>=0||!keys.length?now:keys[keys.length-1]);
 $("sm").innerHTML=op.map(function(k){return'<option value="'+k+'">'+mlab(k)+"</option>"}).join("");$("sm").value=sel;
-var l=mo[sel]||[],a=sAgg(l);$("sh").textContent="Totales de "+mlab(sel);
+var pr=sPer(mo,sel),l=pr.l,a=sAgg(l);$("sh").textContent=pr.t;
 $("sk").innerHTML=[["Presupuestos",a.n],["Piezas",nf(a.q)],["Horas de máquina",shr(a.h)+" h"],["Total",c+" "+smy(a.tot)]].map(function(x){return"<div><small>"+x[0]+"</small><b>"+x[1]+"</b></div>"}).join("");
-$("si").innerHTML=l.length?SK.map(function(k,i){var p=a.tot?a[k]/a.tot*100:0,t=k==="tot";return'<div class="bi"><div class="l"><span>'+SL[i]+"</span><b>"+c+" "+smy(a[k])+(t?"":" ("+Math.round(p)+" %)")+"</b></div>"+(t?"":'<div class="br"><i style="width:'+Math.min(100,p)+'%"></i></div>')+"</div>"}).join(""):'<p class="note">No hay presupuestos guardados en este mes.</p>';
+$("si").innerHTML=l.length?SK.map(function(k,i){return'<div class="bi"><div class="l"><span>'+SL[i]+"</span><b>"+c+" "+smy(a[k])+"</b></div></div>"}).join(""):'<p class="note">'+(pr.e?"Elegí una fecha o un rango de fechas.":"No hay presupuestos aprobados en este período.")+"</p>";
 var all=sAgg([].concat.apply([],keys.map(function(k){return mo[k]}))),row=function(n,g){return"<tr><td>"+n+"</td><td>"+g.n+"</td><td>"+nf(g.q)+"</td><td>"+shr(g.h)+"</td>"+SK.map(function(s){return"<td>"+smy(g[s])+"</td>"}).join("")+"</tr>"};
 $("sm2").innerHTML=keys.length?"<tr><th>Mes</th><th>Presup.</th><th>Piezas</th><th>Horas</th>"+SL.map(function(x){return"<th>"+x+"</th>"}).join("")+"</tr>"+keys.slice().reverse().map(function(k){return row(mlab(k),sAgg(mo[k]))}).join("")+row("Total",all):"";
 var na=LIST.filter(function(b){return b.ok}).length;$("sn").textContent=na?"Se cuentan solo los presupuestos aprobados ("+na+" de "+LIST.length+"), en el mes en que se aprobaron. Los importes se suman como se guardaron, sin convertir monedas.":"No hay presupuestos aprobados. En Presupuestos, activá “Aprobado” en los que se concretaron y acá aparecen sus totales.";$("sx").hidden=!na}
 function sExcel(){var mo=sData(),keys=Object.keys(mo).sort(),sel=$("sm").value,B=function(x){return{b:x}},M=function(v){return{m:Math.round(v*100)/100}},t=$("st").value,tl=t==="3"?"Impresión 3D":t==="L"?"Láser diodo":"Todos",c=$("cur").value||"",all=[],r1=[["Mes","Presupuestos","Piezas","Horas de máquina"].concat(SL).map(B)];
 var line=function(n,g){return[n,g.n,g.q,Math.round(g.h*100)/100].concat(SK.map(function(s){return M(g[s])}))};
 keys.forEach(function(k){all=all.concat(mo[k]);r1.push(line(mlab(k),sAgg(mo[k])))});r1.push(line(B("Total"),sAgg(all)));
-var a=sAgg(mo[sel]||[]),r2=[[B("Reporte de "+mlab(sel))],["Tipo de trabajo",tl],["Moneda",c],[],[B("Concepto"),B("Importe"),B("% del total")]];
+var pr=sPer(mo,sel),a=sAgg(pr.l),r2=[[B(pr.t.replace("Totales","Reporte"))],["Tipo de trabajo",tl],["Moneda",c],[],[B("Concepto"),B("Importe"),B("% del total")]];
 SK.forEach(function(k,i){r2.push([SL[i],M(a[k]),k==="tot"?"":M(a.tot?a[k]/a.tot*100:0)])});r2.push([],["Presupuestos",a.n],["Piezas",a.q],["Horas de máquina",Math.round(a.h*100)/100]);
 var r3=[["Creado","Aprobado","Mes","Nombre","Cliente","Tipo","Tipo de material","Piezas","Horas de máquina"].concat(SL).map(B)];
 all.sort(function(x,y){return x.ts-y.ts}).forEach(function(b){r3.push([dt(b.ts),dt(b.okts||b.ts),mlab(mk(b.okts||b.ts)),b.name,b.cli||"",b.mode==="L"?"Láser":"3D",b.mat||"",b.qty||1,Math.round((b.hrs||0)*100)/100].concat(SK.map(function(s){return M((b.R&&b.R[s])||0)})))});
-dl("reporte-"+sel+".xlsx",mkxlsx([{n:"Resumen por mes",rows:r1,w:[16,13,9,16,14,14,14,24,14,14,14,16]},{n:mlab(sel),rows:r2,w:[26,16,14]},{n:"Presupuestos",rows:r3,w:[12,12,16,28,22,8,18,8,16,14,14,14,24,14,14,14,14]}]),XM)}
+dl("reporte-"+pr.k+".xlsx",mkxlsx([{n:"Resumen por mes",rows:r1,w:[16,13,9,16,14,14,14,24,14,14,14,16]},{n:sRange?"Período":mlab(sel),rows:r2,w:[26,16,14]},{n:"Presupuestos",rows:r3,w:[12,12,16,28,22,8,18,8,16,14,14,14,24,14,14,14,14]}]),XM)}
+var sRange=false;
+function ymd(ts){var d=new Date(ts);return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}
+function fd(y){return y.split("-").reverse().join("/")}
+function sPer(mo,sel){if(!sRange)return{l:mo[sel]||[],t:"Totales de "+mlab(sel),k:sel};
+var f=$("sf").value,u=$("su").value;if(!f&&!u)return{l:[],t:"Totales del período",k:"periodo",e:1};f=f||u;u=u||f;if(f>u){var x=f;f=u;u=x}
+var all=[].concat.apply([],Object.keys(mo).map(function(k){return mo[k]}));
+return{l:all.filter(function(b){var y=ymd(b.okts||b.ts);return y>=f&&y<=u}),t:f===u?"Totales del "+fd(f):"Totales del "+fd(f)+" al "+fd(u),k:f===u?f:f+"_a_"+u}}
+$("srb").onclick=function(){sRange=!sRange;this.textContent=sRange?"Volver a mensual":"Elegir fechas";$("srg").hidden=$("srn").hidden=!sRange;$("sml").hidden=sRange;renderStats()};
+$("sf").onchange=$("su").onchange=renderStats;
 $("sm").onchange=renderStats;$("st").onchange=renderStats;$("sx").onclick=sExcel;$("bst").onclick=function(){renderStats();view(5)};$("back5").onclick=function(){view(1)};
 $("list").onchange=function(e){var t=e.target;if(!t.dataset||t.dataset.a!=="k")return;var b=LIST.filter(function(x){return x.id===t.dataset.i})[0];if(!b)return;b.ok=t.checked;if(t.checked)b.okts=Date.now();else delete b.okts;b.upd=Date.now();saveL();t.closest(".it").classList.toggle("ok",t.checked)};
 function bkCheck(){var t=0,sn=0;try{t=+localStorage.getItem("calc3dlaser.lastbk")||0;sn=+localStorage.getItem("calc3dlaser.bksnooze")||0}catch(e){}
