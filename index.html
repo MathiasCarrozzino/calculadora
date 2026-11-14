@@ -74,6 +74,8 @@ body[data-mode="3"] [data-m="L"],body[data-mode="3"] [data-m="C"],body[data-mode
 .bkb{background:var(--sf);border:1px solid var(--ac);border-left-width:5px;border-radius:14px;padding:12px 14px;margin-bottom:14px}.bkb .acts{margin-top:8px}
 .bi:last-child{border-top:1px solid var(--ln);padding-top:8px}.bi:last-child .l{font-weight:700}
 @media (max-width:440px){.seg button{flex-direction:column;gap:3px;font-size:.84rem;padding:10px 4px}}
+.mr{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px 0;border-bottom:1px solid var(--ln)}.mr .ms{grid-column:1/3}.mr .mx{grid-column:3;justify-self:end}.mr .mn,.mr .mt{grid-column:1/-1}.mr .mt{font-size:.85rem;color:var(--mu);text-align:right;font-variant-numeric:tabular-nums}.mr .mt:empty{display:none}
+.mr input,.mr select,.mr .mx{min-width:0;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:10px}.mr .mx{cursor:pointer;padding:6px 14px}
 #lock{position:fixed;inset:0;z-index:99;background:var(--bg);display:grid;place-items:center;text-align:center;padding:24px}.lkb{max-width:320px}.lkb .ic{width:54px;height:54px;color:var(--ac)}
 @media print{.seg,.acts,.bar,.row button,.add,.hero .btn{display:none!important}body{padding:0}}
 </style>
@@ -89,6 +91,7 @@ body[data-mode="3"] [data-m="L"],body[data-mode="3"] [data-m="C"],body[data-mode
 <header class="hero"><span class="hi"><svg class="ic" data-m="3"><use href="#i3"/></svg><svg class="ic" data-m="L"><use href="#iL"/></svg><svg class="ic" data-m="C"><use href="#iC"/></svg></span><div><h1>Calculadora de precios</h1><p data-m="3">Impresión 3D</p><p data-m="L">Corte y grabado láser diodo</p><p data-m="C">Costura y confección</p></div><span class="hb"><button class="btn" id="bl2">Presupuestos (0)</button><button class="btn" id="bst" aria-label="Estadísticas" title="Estadísticas"><svg class="ic"><use href="#ib"/></svg></button><button class="btn" id="bco" aria-label="Datos de la empresa" title="Datos de la empresa"><svg class="ic"><use href="#ig"/></svg></button></span></header>
 <div id="v1">
 <div class="bkb" id="bkb" hidden><span id="bkt"></span><div class="acts"><button class="btn p" id="bkgo">Hacer respaldo</button><button class="btn" id="bklt">Más tarde</button></div></div>
+<p class="lead">Calculá cuánto cobrar por un trabajo de impresión 3D, de corte y grabado láser diodo o de costura. Todos los valores se pueden editar y quedan guardados en este navegador.</p>
 <div class="seg" role="group" aria-label="Tipo de trabajo">
 <button id="b3" aria-pressed="true"><svg class="ic"><use href="#i3"/></svg>Impresión 3D</button>
 <button id="bL" aria-pressed="false"><svg class="ic"><use href="#iL"/></svg>Láser diodo</button>
@@ -215,7 +218,7 @@ try{var m0=JSON.parse(localStorage.getItem(MK)||"null");if(m0&&m0["3"]&&m0.L)MAT
 if(!MAT.C)MAT.C=DEFC.slice();
 function saveM(){try{localStorage.setItem(MK,JSON.stringify(MAT))}catch(e){}}
 var MF={"3":{n:"mat",p:"f_p",w:"f_w",sel:"pre3"},"L":{n:"lmat",p:"l_p",w:"l_w",h:"l_h",sel:"preL"},"C":{n:"cmat",p:"c_p",w:"c_w",sel:"preC"}};
-function fillSel(k,pick){var s=$(MF[k].sel);s.innerHTML='<option value="">Elegir material</option>'+MAT[k].map(function(m,i){return'<option value="'+i+'">'+esc(m.n)+"</option>"}).join("");if(pick!=null)s.value=pick}
+function fillSel(k,pick){var s=$(MF[k].sel);s.innerHTML='<option value="">Elegir material</option>'+MAT[k].map(function(m,i){return'<option value="'+i+'">'+esc(m.n)+"</option>"}).join("");if(pick!=null)s.value=pick;refreshMatSel()}
 function flash(t,x){var o=t.dataset.o||t.textContent;t.dataset.o=o;t.textContent=x;clearTimeout(t.tm);t.tm=setTimeout(function(){t.textContent=o;delete t.dataset.c},2500)}
 function addPre(k){var c=MF[k],el=$(c.n).closest("label"),w=document.createElement("label");
 w.innerHTML='Materiales guardados<span class="in"><select id="'+c.sel+'"></select></span><span class="acts" style="margin-top:6px"><button type="button" class="btn" data-a="s">Guardar material</button><button type="button" class="btn" data-a="d">Eliminar</button></span><span class="note">Completá nombre, precio y medidas y tocá Guardar material. Para editar uno, elegilo, cambiá los valores y guardalo con el mismo nombre.</span>';
@@ -248,17 +251,17 @@ function fm(c,v){return(c||"")+" "+v.toLocaleString("es",{minimumFractionDigits:
 function fh(h){var m=Math.round(h*60);return Math.floor(m/60)+" h "+m%60+" min"}
 function slug(s){return String(s).trim().replace(/[\\\/:*?"<>|]+/g,"").replace(/\s+/g,"_").slice(0,50)||"presupuesto"}
 function sync(){$("bs").textContent=curId?"Actualizar presupuesto":"Guardar presupuesto";$("bsc").hidden=!curId;$("bl2").textContent="Presupuestos ("+LIST.length+")"}
-function snap(){calc();var v={},rows=[];document.querySelectorAll("#form input,#vat,#gan").forEach(function(i){if(i.type!=="file")v[i.id]=i.value});
+function snap(){calc();var v={},rows=[];document.querySelectorAll("#form input,#vat,#gan").forEach(function(i){if(i.type!=="file"&&i.id)v[i.id]=i.value});
 document.querySelectorAll(".row").forEach(function(r){rows.push([r.querySelector(".od").value,r.querySelector(".oa").value,r.querySelector(".oq").value])});
-return{id:curId,ts:Date.now(),mode:mode,name:$("name").value||"Sin nombre",cli:$("cli").value.trim(),cur:$("cur").value,qty:R.qty,mat:({"L":$("lmat").value,"C":$("cmat").value})[mode]||$("mat").value,hrs:R.hrs,R:R,v:v,rows:rows}}
+return{id:curId,ts:Date.now(),mode:mode,name:$("name").value||"Sin nombre",cli:$("cli").value.trim(),cur:$("cur").value,qty:R.qty,mat:({"L":$("lmat").value,"C":$("cmat").value})[mode]||$("mat").value,hrs:R.hrs,R:R,v:v,rows:rows,mrows:[].map.call(document.querySelectorAll(".mr"),mval)}}
 function resetJob(){var d={};SEC.forEach(function(s){s.f.forEach(function(f){d[f[0]]=f[2]})});
 ["name","cli","qty","h","min","f_g","l_a","c_u","c_g","c_a","pm","qm"].forEach(function(k){if($(k))$(k).value=d[k]});
-$("rows").innerHTML="";var g=$("gc");if(g)g.value="";var gn=$("gcn");if(gn)gn.textContent="Lee tiempo y peso de PrusaSlicer y OrcaSlicer; en Cura solo el tiempo.";
+$("rows").innerHTML="";$("mrows").innerHTML="";var g=$("gc");if(g)g.value="";var gn=$("gcn");if(gn)gn.textContent="Lee tiempo y peso de PrusaSlicer y OrcaSlicer; en Cura solo el tiempo.";
 curId=null;sync();calc()}
 function saveB(asNew){var b=snap(),i=-1;if(curId&&!asNew)LIST.forEach(function(x,k){if(x.id===curId)i=k});
 if(i>=0){b.id=curId;b.ts=LIST[i].ts;b.upd=Date.now();b.ok=LIST[i].ok;b.okts=LIST[i].okts;LIST[i]=b}else{b.id=Date.now().toString(36);LIST.unshift(b);curId=b.id}
 if(saveL()){resetJob();msg("Presupuesto guardado y campos reiniciados. Lo encontrás en el botón Presupuestos.")}}
-function openB(b){mode=b.mode;$("tpp").value="0";$("mpp").value="0";$("lpp").value="0";Object.keys(b.v).forEach(function(k){if($(k))$(k).value=b.v[k]});$("rows").innerHTML="";(b.rows||[]).forEach(function(r){addRow(r[0],r[1],r[2])});curId=b.id;view(1);syncTpp();setMode(b.mode);sync();msg("Presupuesto abierto: podés editarlo y actualizarlo.")}
+function openB(b){mode=b.mode;$("tpp").value="0";$("mpp").value="0";$("lpp").value="0";Object.keys(b.v).forEach(function(k){if($(k))$(k).value=b.v[k]});$("rows").innerHTML="";(b.rows||[]).forEach(function(r){addRow(r[0],r[1],r[2])});$("mrows").innerHTML="";(b.mrows||[]).forEach(function(r){addMat(r[0],r[1],r[2],r[3])});curId=b.id;view(1);syncTpp();setMode(b.mode);sync();msg("Presupuesto abierto: podés editarlo y actualizarlo.")}
 function view(k){[1,2,3,4,5].forEach(function(i){$("v"+i).hidden=k!==i});$("bar").hidden=k!==1;$("bl2").hidden=k!==1;$("bco").hidden=k!==1;$("bst").hidden=k!==1;if(k===2)renderList();if(k===1)bkCheck();window.scrollTo(0,0)}
 var CK="calc3dlaser.company",CO={n:"",l:"",w:0,h:0},RCUR="$",pv=1;
 try{var c0=JSON.parse(localStorage.getItem(CK)||"null");if(c0)CO=c0}catch(e){}
@@ -359,6 +362,7 @@ var p=[[{b:"Sección"},{b:"Dato"},{b:"Valor"}]];SEC.forEach(function(s){if(s.m&&
 p.push(["Ganancia e impuestos","Porcentaje de ganancia",+b.v.gan||0],["Ganancia e impuestos","IVA",+b.v.vat||0],["Trabajo","Tiempo ingresado por pieza",b.v.tpp==="1"?"Sí":"No"],["Trabajo","Material ingresado por pieza",b.v.mpp==="1"?"Sí":"No"],["Trabajo","Mano de obra ingresada por pieza",b.v.lpp==="1"?"Sí":"No"]);
 var S=[{n:"Presupuesto",rows:a,w:[30,26]},{n:"Parámetros",rows:p,w:[26,36,16]}];
 if(b.rows&&b.rows.length)S.push({n:"Otros costos",rows:[[{b:"Concepto"},{b:"Monto"},{b:"Cantidad"}]].concat(b.rows.map(function(r){return[r[0],{m:+r[1]||0},+r[2]||0]})),w:[30,14,10]});
+if(b.mrows&&b.mrows.length){var fm2=b.v&&b.v.mpp==="1"?(b.qty||1):1;S.push({n:"Materiales adicionales",rows:[[{b:"Material"},{b:"Cantidad"},{b:"Unidad"},{b:"Precio por unidad"},{b:"Subtotal"}]].concat(b.mrows.map(function(r){return[r[0],+r[1]||0,r[2],{m:+r[3]||0},{m:(+r[1]||0)*(+r[3]||0)*fm2}]})),w:[30,12,10,18,14]})}
 dl(slug(b.name)+".xlsx",mkxlsx(S),XM)}
 function xlAll(){var a=[["Fecha","Nombre","Tipo","Material","Piezas","Moneda","Material (costo)","Electricidad","Mano de obra","Máquina y mantenimiento","Otros costos","Ganancia","IVA","Precio final","Precio por pieza"].map(function(x){return{b:x}})].concat(LIST.map(function(b){return[dt(b.ts),b.name,mn(b.mode),b.mat||"",b.qty,b.cur||"",{m:b.R.mat},{m:b.R.el},{m:b.R.lab},{m:b.R.mc},{m:b.R.ot},{m:b.R.gan||0},{m:b.R.vat},{m:b.R.tot},{m:b.R.tot/b.qty}]}));
 dl("presupuestos.xlsx",mkxlsx([{n:"Presupuestos",rows:a,w:[12,26,8,18,8,8,16,14,14,22,14,14,12,14,16]}]),XM)}
@@ -383,12 +387,24 @@ function syncTpp(){var c=$("tpp"),m=$("mpp"),l=$("lpp"),C=mode==="C",L=function(
 c.checked=c.value==="1";m.checked=m.value==="1";l.checked=l.value==="1";var tp=c.checked?" por pieza":"",mp=m.checked?" por pieza":"",lp=l.checked?" por pieza":"";
 L("h",(C?"Horas de costura":"Horas de máquina")+tp);L("min",(C?"Minutos de costura":"Minutos de máquina")+tp);
 L("f_g","Peso usado"+mp);L("l_a",m.checked?"Área ocupada por pieza":"Área ocupada por el trabajo");L("c_u","Tela usada"+mp);L("c_g","Relleno usado"+mp);L("c_a","Hilo y avíos"+mp);
-L("pm",(C?"Patronaje y corte":"Preparación del archivo")+lp);L("qm",(C?"Relleno y acabado":"Posprocesado y acabado")+lp)}
+L("pm",(C?"Patronaje y corte":"Preparación del archivo")+lp);L("qm",(C?"Relleno y acabado":"Posprocesado y acabado")+lp);document.querySelectorAll(".mr .mq").forEach(function(e){e.placeholder="Cantidad"+mp})}
 var tw=document.createElement("label");tw.className="sw";tw.innerHTML='<input type="checkbox" id="tpp" role="switch" value="0"><span>Tiempo por pieza</span><span class="note" id="ttot">Activalo para cargar el tiempo de una sola pieza: la app lo multiplica por la cantidad.</span>';
 $("min").closest("label").insertAdjacentElement("afterend",tw);
 $("tpp").onchange=function(){this.value=this.checked?"1":"0";syncTpp();calc()};
 var mw=document.createElement("label");mw.className="sw";mw.innerHTML='<input type="checkbox" id="mpp" role="switch" value="0"><span>Material por pieza</span><span class="note" id="mtot"></span>';tw.insertAdjacentElement("afterend",mw);$("mpp").onchange=function(){this.value=this.checked?"1":"0";syncTpp();calc()};
 var lw=document.createElement("label");lw.className="sw";lw.innerHTML='<input type="checkbox" id="lpp" role="switch" value="0"><span>Mano de obra por pieza</span><span class="note" id="ltot"></span>';$("qr").closest("label").insertAdjacentElement("afterend",lw);$("lpp").onchange=function(){this.value=this.checked?"1":"0";syncTpp();calc()};
+function mval(r){return[r.querySelector(".mn").value,r.querySelector(".mq").value,r.querySelector(".mu").value,r.querySelector(".mp").value]}
+function matOpts(){return'<option value="">Material guardado…</option>'+MAT[mode].map(function(m,i){return'<option value="'+i+'">'+esc(m.n)+"</option>"}).join("")}
+function refreshMatSel(){document.querySelectorAll(".mr .ms").forEach(function(s){s.innerHTML=matOpts()})}
+function addMat(nm,q,u,p){var r=document.createElement("div");r.className="mr";
+r.innerHTML='<select class="ms" aria-label="Material guardado"></select><button type="button" class="mx" aria-label="Quitar material">×</button><input class="mn" placeholder="Material" aria-label="Material"><input class="mq" type="number" step="any" inputmode="decimal" aria-label="Cantidad"><input class="mu" placeholder="Unidad (m, g, u…)" aria-label="Unidad"><input class="mp" type="number" step="any" inputmode="decimal" placeholder="Precio por unidad" aria-label="Precio por unidad"><span class="mt"></span>';
+r.querySelector(".ms").innerHTML=matOpts();r.querySelector(".mn").value=nm||"";r.querySelector(".mq").value=q||"";r.querySelector(".mu").value=u||"";r.querySelector(".mp").value=p||"";
+r.querySelector(".mq").placeholder="Cantidad"+($("mpp").checked?" por pieza":"");
+r.querySelector(".ms").onchange=function(){var m=MAT[mode][this.value];if(!m)return;var pr=mode==="L"?m.p/((m.w*m.h)||1):mode==="C"?m.p:m.p/(m.w||1);r.querySelector(".mn").value=m.n;r.querySelector(".mu").value=mode==="L"?"cm²":mode==="C"?"m":"g";r.querySelector(".mp").value=Math.round(pr*1e6)/1e6;this.value="";calc()};
+r.querySelector(".mx").onclick=function(){r.remove();calc()};$("mrows").appendChild(r)}
+var ms0=document.createElement("section");ms0.id="msec";ms0.innerHTML='<h2>Materiales adicionales</h2><div id="mrows"></div><button class="btn add" id="madd" type="button">Añadir material</button><p class="note">Sumá otros materiales del trabajo: otra tela, un segundo filamento, botones, etc. Elegí uno guardado para cargar su precio o completá los datos a mano. Se les aplica el margen del material principal.</p>';
+$("form").insertBefore(ms0,[].filter.call($("form").children,function(x){var h=x.querySelector("h2");return h&&h.textContent==="Electricidad"})[0]);
+$("madd").onclick=function(){addMat();calc()};
 function addRow(d,a,q){var r=document.createElement("div");r.className="row";
 r.innerHTML='<input class="od" placeholder="Concepto" aria-label="Concepto"><input class="oa" type="number" step="any" inputmode="decimal" placeholder="Monto" aria-label="Monto"><input class="oq" type="number" step="any" value="1" aria-label="Cantidad"><button aria-label="Quitar línea">×</button>';
 r.querySelector(".od").value=d||"";r.querySelector(".oa").value=a||"";r.querySelector(".oq").value=q||1;
@@ -402,6 +418,7 @@ if(mode==="C"){mat=(n("c_u")*n("c_p")+n("c_g")/1000*n("c_r")+n("c_a"))*mm*(1+n("
 mc=hrs*n("cL")*(1+n("rL")/100)/((n("yL")*365*n("dL"))||1)+hrs*n("modc")/(n("modh")||1)}
 else{mat=n("f_g")*mm/(n("f_w")||1)*n("f_p")*(1+n("f_f")/100)*(1+n("f_m")/100);w=n("e3");
 mc=hrs*n("c3")*(1+n("r3")/100)/((n("y3")*365*n("d3"))||1)}
+var xm=0;document.querySelectorAll(".mr").forEach(function(r){var q=parseFloat(r.querySelector(".mq").value)||0,p=parseFloat(r.querySelector(".mp").value)||0,t=q*p*mm;xm+=t;r.querySelector(".mt").textContent=t?"Subtotal: "+money(t):""});mat+=xm*(1+n(mode==="C"?"c_m":L?"l_m":"f_m")/100);
 var el=w/1000*hrs*n("kwh"),lab=(n("pm")/60*n("pr")+n("qm")/60*n("qr"))*($("lpp").checked?qty:1),ot=0;
 document.querySelectorAll(".row").forEach(function(r){ot+=(parseFloat(r.querySelector(".oa").value)||0)*(parseFloat(r.querySelector(".oq").value)||0)});
 var sub=mat+el+lab+mc+ot,gan=sub*n("gan")/100,vat=(sub+gan)*n("vat")/100,tot=sub+gan+vat;
@@ -410,10 +427,10 @@ R={mat:mat,el:el,lab:lab,mc:mc,ot:ot,gan:gan,vat:vat,tot:tot,qty:qty,hrs:hrs,per
 $("ttot").textContent=$("tpp").checked?"Total para "+qty+" piezas: "+fh(hrs):"Activalo para cargar el tiempo de una sola pieza: la app lo multiplica por la cantidad.";$("mtot").textContent=$("mpp").checked?"Total para "+qty+" piezas: "+(mode==="C"?Math.round(n("c_u")*qty*100)/100+" m de tela y "+Math.round(n("c_g")*qty)+" g de relleno":L?Math.round(n("l_a")*qty*100)/100+" cm²":Math.round(n("f_g")*qty*100)/100+" g"):"Activalo para cargar el material de una sola pieza: la app lo multiplica por la cantidad.";$("ltot").textContent=$("lpp").checked?"Total para "+qty+" piezas: "+fh((n("pm")+n("qm"))/60*qty):"Activalo para cargar la mano de obra de una sola pieza: la app la multiplica por la cantidad.";$("uw").style.display=qty>1?"":"none";$("bt").textContent=money(tot);
 document.querySelectorAll(".cur").forEach(function(e){e.textContent=$("cur").value||""});
 save()}
-function save(){try{var o={mode:mode,v:{},rows:[]};document.querySelectorAll("#form input,#vat,#gan").forEach(function(i){if(i.type!=="file")o.v[i.id]=i.value});
+function save(){try{var o={mode:mode,v:{},rows:[]};document.querySelectorAll("#form input,#vat,#gan").forEach(function(i){if(i.type!=="file"&&i.id)o.v[i.id]=i.value});
 document.querySelectorAll(".row").forEach(function(r){o.rows.push([r.querySelector(".od").value,r.querySelector(".oa").value,r.querySelector(".oq").value])});
-localStorage.setItem(KEY,JSON.stringify(o))}catch(e){}}
-function setMode(m){mode=m;document.body.dataset.mode=m;$("b3").setAttribute("aria-pressed",m==="3");$("bL").setAttribute("aria-pressed",m==="L");$("bC").setAttribute("aria-pressed",m==="C");syncTpp();calc()}
+o.mrows=[].map.call(document.querySelectorAll(".mr"),mval);localStorage.setItem(KEY,JSON.stringify(o))}catch(e){}}
+function setMode(m){mode=m;document.body.dataset.mode=m;$("b3").setAttribute("aria-pressed",m==="3");$("bL").setAttribute("aria-pressed",m==="L");$("bC").setAttribute("aria-pressed",m==="C");syncTpp();refreshMatSel();calc()}
 $("b3").onclick=function(){setMode("3")};$("bL").onclick=function(){setMode("L")};$("bC").onclick=function(){setMode("C")};
 $("add").onclick=function(){addRow();calc()};
 document.addEventListener("input",calc);
@@ -424,7 +441,7 @@ if(R.qty>1)t.push("Precio por pieza ("+R.qty+" u.): "+money(R.tot/R.qty));
 var s=t.join("\n"),b=$("cp");function ok(){b.textContent="Copiado";setTimeout(function(){b.textContent="Copiar resumen"},1500)}
 try{navigator.clipboard.writeText(s).then(ok,function(){fb(s,ok)})}catch(e){fb(s,ok)}};
 function fb(s,ok){var a=document.createElement("textarea");a.value=s;document.body.appendChild(a);a.select();try{document.execCommand("copy");ok()}catch(e){}a.remove()}
-try{var o=JSON.parse(localStorage.getItem(KEY)||"null");if(o){Object.keys(o.v).forEach(function(k){if($(k))$(k).value=o.v[k]});(o.rows||[]).forEach(function(r){addRow(r[0],r[1],r[2])});if(o.mode)mode=o.mode}}catch(e){}
+try{var o=JSON.parse(localStorage.getItem(KEY)||"null");if(o){Object.keys(o.v).forEach(function(k){if($(k))$(k).value=o.v[k]});(o.rows||[]).forEach(function(r){addRow(r[0],r[1],r[2])});(o.mrows||[]).forEach(function(r){addMat(r[0],r[1],r[2],r[3])});if(o.mode)mode=o.mode}}catch(e){}
 var LK="calc3dlaser.lock",lkOn=false,lkT=0,BKT="Guarda presupuestos, materiales y datos de la empresa en un archivo. Hacelo seguido: si desinstalás la app o borrás sus datos, se pierde lo que no respaldaste.";
 try{lkOn=localStorage.getItem(LK)==="1"}catch(e){}
 function isNat(){return!!(window.NB&&NB.native)}
@@ -450,7 +467,7 @@ $("bke").onclick=bkExport;$("bki").onchange=function(){var f=this.files[0];this.
 if(lkOn&&isNat()){$("lock").hidden=false;setTimeout(unlock,400)}
 function mn(m){return m==="L"?"Láser":m==="C"?"Costura":"3D"}
 function norm(s){return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()}
-function sFind(){var q=norm($("qs").value).split(/\s+/).filter(Boolean);return LIST.filter(function(b){var h=norm([b.name,b.cli,b.mat,({"L":"laser","C":"costura confeccion munecos"})[b.mode]||"impresion 3d",dt(b.ts),mlab(mk(b.ts)),b.ok?"aprobado":"pendiente"].join(" "));return q.every(function(t){return h.indexOf(t)>=0})})}
+function sFind(){var q=norm($("qs").value).split(/\s+/).filter(Boolean);return LIST.filter(function(b){var h=norm([b.name,b.cli,b.mat,(b.mrows||[]).map(function(r){return r[0]}).join(" "),({"L":"laser","C":"costura confeccion munecos"})[b.mode]||"impresion 3d",dt(b.ts),mlab(mk(b.ts)),b.ok?"aprobado":"pendiente"].join(" "));return q.every(function(t){return h.indexOf(t)>=0})})}
 $("qs").oninput=renderList;
 var MN=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],SK=["mat","el","lab","mc","ot","gan","vat","tot"],SL=["Material","Electricidad","Mano de obra","Máquina y mantenimiento","Otros costos","Ganancia","IVA","Total"];
 function mk(ts){var d=new Date(ts);return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)}
