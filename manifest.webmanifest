@@ -1,7 +1,7 @@
 {
  "name": "Calculadora de precios 3D y láser",
  "short_name": "Precios 3D/Láser",
- "description": "Presupuestos para impresión 3D y corte láser diodo",
+ "description": "Presupuestos para impresión 3D, corte láser y costura",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
